@@ -117,6 +117,142 @@ app.get('/api/files/:filename', (req, res) => {
   });
 });
 
+// PREVIEW FILE
+function previewFile(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  
+  // Images
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+    const fileUrl = `file:///C:/Users/laxmi/personal-cloud-storage/storage/user_1/${filename}`;
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+      <div style="position: relative; max-width: 90%; max-height: 90%;">
+        <img src="${fileUrl}" style="max-width: 100%; max-height: 100%; border-radius: 8px;">
+        <button onclick="this.closest('div').parentElement.remove()" style="
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          width: 40px;
+          height: 40px;
+          background: white;
+          border: none;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 20px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        ">✕</button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    showStatus(`✅ Preview: ${filename}`, 'success');
+  }
+  
+  // PDF
+  else if (ext === 'pdf') {
+    const fileUrl = `file:///C:/Users/laxmi/personal-cloud-storage/storage/user_1/${filename}`;
+    window.open(fileUrl, '_blank');
+    showStatus(`✅ Opening: ${filename}`, 'success');
+  }
+  
+  // Text files
+  else if (['txt', 'csv', 'json'].includes(ext)) {
+    fetch(`file:///C:/Users/laxmi/personal-cloud-storage/storage/user_1/${filename}`)
+      .then(r => r.text())
+      .then(content => {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 20px;
+          border-radius: 8px;
+          max-width: 600px;
+          max-height: 600px;
+          overflow: auto;
+          z-index: 1000;
+          box-shadow: 0 5px 40px rgba(0,0,0,0.3);
+        `;
+        
+        modal.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3>${filename}</h3>
+            <button onclick="this.closest('div').parentElement.remove()" style="
+              border: none;
+              background: none;
+              font-size: 20px;
+              cursor: pointer;
+            ">✕</button>
+          </div>
+          <pre style="
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow: auto;
+            max-height: 500px;
+            font-size: 12px;
+          ">${content}</pre>
+        `;
+        
+        document.body.appendChild(modal);
+        showStatus(`✅ Preview: ${filename}`, 'success');
+      });
+  }
+  
+  // Unsupported
+  else {
+    showStatus(`📥 Please download this file type to view`, 'error');
+  }
+}
+
+// DOWNLOAD FILE - NEW ENDPOINT ADD KAR
+app.get('/api/download/:filename', (req, res) => {
+  const filePath = path.join(userDir, req.params.filename);
+  
+  fs.exists(filePath, (exists) => {
+    if (!exists) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    res.download(filePath, req.params.filename);
+  });
+});
+
+// VIEW FILE (SERVE IMAGE FILES)
+app.get('/api/view/:filename', (req, res) => {
+  const filePath = path.join(userDir, req.params.filename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+  // Set proper MIME type
+  const ext = filePath.split('.').pop().toLowerCase();
+  let mimeType = 'application/octet-stream';
+  if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+  else if (ext === 'png') mimeType = 'image/png';
+  else if (ext === 'gif') mimeType = 'image/gif';
+  else if (ext === 'pdf') mimeType = 'application/pdf';
+  res.setHeader('Content-Type', mimeType);
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.sendFile(filePath);
+});
+
+
 // Delete File
 app.delete('/api/files/:filename', (req, res) => {
   const filePath = path.join(userDir, req.params.filename);
