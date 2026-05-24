@@ -16,9 +16,7 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 mongoose
-  .connect(
-    "mongodb+srv://lak200527_db_user:Id3w57EiGyQ8afGU@cluster0.mqb59pf.mongodb.net/?appName=Cluster0",
-  )
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log("MongoDB error:", err));
 
@@ -247,7 +245,7 @@ app.put("/api/files/share/:id", authMiddleware, async (req, res) => {
     res.json({
       success: true,
       message: "Share link created",
-      shareLink: `http://localhost:5000/share/${file.shareToken}`,
+      shareLink: `/share/${file.shareToken}`,
     });
   } catch (error) {
     res.status(500).json({
