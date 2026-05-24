@@ -208,31 +208,6 @@
         uploadFile(file);
       }
 
-      // Upload file
-      async function uploadFile(file) {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        try {
-          const response = await authFetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
-
-          const data = await response.json();
-
-          if (data.success) {
-            showStatus(`✅ ${file.name} uploaded`, "success");
-            document.getElementById("uploadInput").value = "";
-            loadFiles();
-          } else {
-            showStatus("❌ Upload failed", "error");
-          }
-        } catch (error) {
-          showStatus(`❌ ${error.message}`, "error");
-        }
-      }
-
       // Load files
       async function loadFiles() {
         try {
@@ -1056,18 +1031,20 @@
       loadFiles();
 
       // Drag and drop
+      const dropArea = document.querySelector(".main-panel");
+
       document.addEventListener("dragover", (e) => {
         e.preventDefault();
-        document.querySelector(".main-content").style.background = "#f0f7ff";
+        if (dropArea) dropArea.style.background = "#f0f7ff";
       });
 
       document.addEventListener("dragleave", () => {
-        document.querySelector(".main-content").style.background = "#f8f9fa";
+        if (dropArea) dropArea.style.background = "";
       });
 
       document.addEventListener("drop", (e) => {
         e.preventDefault();
-        document.querySelector(".main-content").style.background = "#f8f9fa";
+        if (dropArea) dropArea.style.background = "";
         const files = e.dataTransfer.files;
         if (files.length > 0) {
           uploadFile(files[0]);
