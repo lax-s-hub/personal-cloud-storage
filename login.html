@@ -1,0 +1,230 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - CloudStore</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .container {
+        background: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        max-width: 400px;
+      }
+
+      .logo {
+        text-align: center;
+        font-size: 32px;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 10px;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #333;
+        font-size: 24px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 500;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn-login {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: opacity 0.3s;
+        margin-top: 20px;
+      }
+
+      .btn-login:hover {
+        opacity: 0.9;
+      }
+
+      .links {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .links a {
+        color: #667eea;
+        text-decoration: none;
+        font-size: 14px;
+      }
+
+      .links a:hover {
+        text-decoration: underline;
+      }
+
+      .signup-link {
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+      }
+
+      .signup-link p {
+        color: #666;
+        font-size: 14px;
+      }
+
+      .dashboard-link {
+        display: block;
+        margin-top: 15px;
+        text-align: center;
+        color: #667eea;
+        text-decoration: none;
+        font-weight: bold;
+      }
+
+      .dashboard-link:hover {
+        text-decoration: underline;
+      }
+
+      .demo-note {
+        background: #f0f4ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+        color: #667eea;
+        font-size: 13px;
+        text-align: center;
+      }
+
+      @media (max-width: 480px) {
+        .container {
+          padding: 25px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">🌥️ CloudStore</div>
+      <h1>Welcome Back</h1>
+
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            placeholder="your@email.com"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            placeholder="••••••••"
+          />
+        </div>
+
+        <button type="submit" class="btn-login">Sign In</button>
+      </form>
+
+      <div class="links">
+        <a href="#">Forgot password?</a>
+      </div>
+
+      <div class="signup-link">
+        <p>
+          Don't have an account?
+          <a href="signup.html" style="color: #667eea; font-weight: bold"
+            >Sign up here</a
+          >
+        </p>
+      </div>
+
+      <!-- <a href="index.html" class="dashboard-link">← Continue to Dashboard (Demo)</a>
+
+        <div class="demo-note">
+            ℹ️ Demo Mode: Click "Continue to Dashboard" to see the working file manager
+        </div> -->
+    </div>
+
+    <script>
+      async function handleLogin(event) {
+        event.preventDefault();
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        try {
+          const response = await fetch("/api/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            // alert("Login successful");
+            localStorage.setItem("token", data.token);
+            window.location.href = "/index.html";
+          } else {
+            alert(data.message);
+          }
+        } catch (error) {
+          alert("Something went wrong");
+        }
+      }
+    </script>
+  </body>
+</html>

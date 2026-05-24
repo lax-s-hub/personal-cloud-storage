@@ -1,745 +1,1100 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Personal Cloud Storage</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personal Cloud Storage</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">☁</div>
+          <div>
+            <div class="brand-title">Cloud Storage</div>
+            <div class="brand-subtitle">Personal Drive</div>
+          </div>
+        </div>
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: #f8f9fa;
-      color: #202124;
-    }
+        <button
+          class="primary-btn"
+          onclick="document.getElementById('uploadInput').click()"
+        >
+          Upload File
+        </button>
+        <button class="secondary-btn" onclick="createFolder()">
+          New Folder
+        </button>
 
-    /* Navbar */
-    .navbar {
-      background: white;
-      border-bottom: 1px solid #dadce0;
-      padding: 0 24px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      height: 64px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 1px 3px 0 rgba(0,0,0,0.12), 0 1px 2px 0 rgba(0,0,0,0.24);
-    }
+        <input
+          type="file"
+          id="uploadInput"
+          class="upload-input"
+          onchange="handleFileSelect(event)"
+        />
 
-    .navbar-logo {
-      font-size: 24px;
-      font-weight: 500;
-      color: #1f2937;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+        <nav class="sidebar-nav">
+          <div class="nav-label">Browse</div>
 
-    .navbar-search {
-      flex: 1;
-      max-width: 600px;
-    }
+          <button
+            class="nav-item active"
+            onclick="
+              setActiveTab(this);
+              filterFiles('all');
+            "
+          >
+            <span>My Drive</span>
+          </button>
 
-    .search-box {
-      background: #f1f3f4;
-      border: 1px solid transparent;
-      border-radius: 24px;
-      padding: 8px 16px;
-      width: 100%;
-      font-size: 14px;
-      color: #202124;
-      transition: all 0.3s;
-    }
+          <button
+            class="nav-item"
+            onclick="
+              setActiveTab(this);
+              sortFiles('recent');
+            "
+          >
+            <span>Recent</span>
+          </button>
 
-    .search-box:focus {
-      outline: none;
-      background: white;
-      border-color: #dadce0;
-      box-shadow: 0 1px 1px 0 rgba(65,69,79,0.3);
-    }
+          <button
+            class="nav-item"
+            onclick="
+              setActiveTab(this);
+              filterFiles('starred');
+            "
+          >
+            <span>Starred</span>
+          </button>
 
-    .navbar-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+          <button
+            class="nav-item"
+            onclick="
+              setActiveTab(this);
+              loadTrash();
+            "
+          >
+            <span>Trash</span>
+          </button>
+        </nav>
 
-    .icon-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font-size: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-    }
+        <div class="sidebar-footer">
+          <button class="ghost-btn" onclick="logout()">Logout</button>
+        </div>
+      </aside>
 
-    .icon-btn:hover {
-      background: #f1f3f4;
-    }
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <h1 class="page-title">My Drive</h1>
+            <p class="page-subtitle">
+              Manage your files, folders, and storage in one place.
+            </p>
+          </div>
 
-    /* Sidebar */
-    .sidebar {
-      width: 260px;
-      background: white;
-      padding: 12px 0;
-      position: fixed;
-      left: 0;
-      top: 64px;
-      bottom: 0;
-      border-right: 1px solid #dadce0;
-      overflow-y: auto;
-    }
+          <div class="topbar-actions">
+            <div class="search-wrap">
+              <input
+                type="text"
+                id="searchInput"
+                class="search-box"
+                placeholder="Search files"
+                oninput="searchFiles()"
+                autocomplete="off"
+              />
+              <div id="searchSuggestions" class="search-suggestions"></div>
+            </div>
 
-    .upload-btn {
-      background: #1f73e6;
-      color: white;
-      border: none;
-      border-radius: 24px;
-      padding: 10px 24px;
-      margin: 8px 12px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      width: calc(100% - 24px);
-      transition: all 0.2s;
-      box-shadow: 0 1px 3px 0 rgba(0,0,0,0.12);
-    }
+            <select class="sort-select" onchange="sortFiles(this.value)">
+              <option value="">Sort</option>
+              <option value="recent">Recent</option>
+              <option value="name">Name</option>
+              <option value="size">Size</option>
+            </select>
 
-    .upload-btn:hover {
-      background: #1657b7;
-      box-shadow: 0 1px 3px 0 rgba(0,0,0,0.3);
-    }
+            <div class="view-toggle">
+              <button
+                class="view-btn active"
+                title="List view"
+                onclick="setView('list')"
+              >
+                ☰
+              </button>
+              <button
+                class="view-btn"
+                title="Grid view"
+                onclick="setView('grid')"
+              >
+                ⊞
+              </button>
+            </div>
+          </div>
+        </header>
 
-    .nav-item {
-      padding: 8px 16px;
-      margin: 0 8px;
-      border-radius: 0 24px 24px 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      color: #202124;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
+        <div id="status" class="status-message"></div>
 
-    .nav-item:hover {
-      background: #f1f3f4;
-    }
+        <section class="stats">
+          <div class="stat-card">
+            <div class="stat-label">Total Files</div>
+            <div class="stat-value" id="totalFiles">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Storage Used</div>
+            <div class="stat-value" id="storageUsed">0 MB</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Status</div>
+            <div class="stat-value" id="status-indicator">Ready</div>
+          </div>
+        </section>
 
-    .nav-item.active {
-      background: #e8f0fe;
-      color: #1f73e6;
-      font-weight: 500;
-    }
+        <section class="folders-section">
+          <div class="section-header">
+            <h3>Folders</h3>
+          </div>
+          <div id="folderList" class="folder-list"></div>
+        </section>
 
-    /* Main Content */
-    .main-content {
-      margin-left: 260px;
-      margin-top: 64px;
-      padding: 32px;
-      min-height: calc(100vh - 64px);
-    }
-
-    .content-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-
-    .content-header h1 {
-      font-size: 32px;
-      font-weight: 400;
-      color: #202124;
-    }
-
-    .view-options {
-      display: flex;
-      gap: 12px;
-    }
-
-    .view-btn {
-      width: 36px;
-      height: 36px;
-      border: 1px solid #dadce0;
-      background: white;
-      border-radius: 4px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      transition: all 0.2s;
-    }
-
-    .view-btn.active {
-      background: #e8f0fe;
-      color: #1f73e6;
-      border-color: #1f73e6;
-    }
-
-    /* File List */
-    .file-list {
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px 0 rgba(0,0,0,0.12);
-    }
-
-    .file-item {
-      display: flex;
-      align-items: center;
-      padding: 12px 16px;
-      border-bottom: 1px solid #f0f0f0;
-      transition: background 0.2s;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .file-item:last-child {
-      border-bottom: none;
-    }
-
-    .file-item:hover {
-      background: #f8f9fa;
-    }
-
-    .file-icon {
-      width: 40px;
-      height: 40px;
-      background: #e8f0fe;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      margin-right: 16px;
-      flex-shrink: 0;
-    }
-
-    .file-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .file-name {
-      font-size: 14px;
-      color: #1f73e6;
-      font-weight: 500;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      cursor: pointer;
-      transition: color 0.2s;
-    }
-
-    .file-name:hover {
-      color: #1657b7;
-      text-decoration: underline;
-    }
-
-    .file-meta {
-      font-size: 12px;
-      color: #5f6368;
-      margin-top: 4px;
-    }
-
-    .file-actions {
-      display: flex;
-      gap: 8px;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-
-    .file-item:hover .file-actions {
-      opacity: 1;
-    }
-
-    .action-btn {
-      width: 32px;
-      height: 32px;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font-size: 16px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-    }
-
-    .action-btn:hover {
-      background: #f1f3f4;
-    }
-
-    .delete-btn:hover {
-      background: #fce8e6;
-      color: #d33b27;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 60px 32px;
-    }
-
-    .empty-icon {
-      font-size: 96px;
-      margin-bottom: 16px;
-      opacity: 0.3;
-    }
-
-    .empty-text {
-      font-size: 16px;
-      color: #5f6368;
-      margin-bottom: 8px;
-    }
-
-    .empty-subtext {
-      font-size: 14px;
-      color: #9aa0a6;
-    }
-
-    /* Upload Dialog */
-    .upload-input {
-      display: none;
-    }
-
-    .status-message {
-      padding: 16px;
-      margin-bottom: 16px;
-      border-radius: 4px;
-      display: none;
-      font-size: 14px;
-      animation: slideDown 0.3s ease;
-    }
-
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .status-message.success {
-      background: #e6f4ea;
-      color: #137333;
-      border: 1px solid #a8d5ba;
-      display: block;
-    }
-
-    .status-message.error {
-      background: #fce8e6;
-      color: #c5221f;
-      border: 1px solid #f1ddd9;
-      display: block;
-    }
-
-    /* Stats */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-
-    .stat-card {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px 0 rgba(0,0,0,0.12);
-    }
-
-    .stat-label {
-      font-size: 12px;
-      color: #5f6368;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-
-    .stat-value {
-      font-size: 24px;
-      font-weight: 500;
-      color: #202124;
-    }
-
-    @media (max-width: 768px) {
-      .sidebar {
-        width: 200px;
-      }
-
-      .main-content {
-        margin-left: 200px;
-        padding: 16px;
-      }
-
-      .content-header h1 {
-        font-size: 24px;
-      }
-    }
-
-    @media (max-width: 600px) {
-      .sidebar {
-        display: none;
-      }
-
-      .main-content {
-        margin-left: 0;
-      }
-
-      .navbar {
-        padding: 0 12px;
-      }
-
-      .navbar-search {
-        display: none;
-      }
-    }
-  </style>
-</head>
-<body>
-  <!-- Navbar -->
-  <div class="navbar">
-    <div class="navbar-logo">
-      ☁️ Cloud Storage
-    </div>
-    <div class="navbar-search">
-      <input type="text" class="search-box" placeholder="Search in Drive" id="searchInput" onkeyup="searchFiles()">
-    </div>
-    <div class="navbar-right">
-      <button class="icon-btn" title="Settings">⚙️</button>
-      <button class="icon-btn" title="Help">❓</button>
-    </div>
-  </div>
-
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <button class="upload-btn" onclick="document.getElementById('uploadInput').click()">
-      📤 Upload
-    </button>
-    <input type="file" id="uploadInput" class="upload-input" onchange="handleFileSelect(event)">
-    
-    <div class="nav-item active" onclick="filterFiles('all')">
-      ⭐ My Drive
-    </div>
-    <div class="nav-item" onclick="alert('Coming Soon!')">
-      🔗 Shared with me
-    </div>
-    <div class="nav-item" onclick="sortFiles('recent')">
-      ⏰ Recent
-    </div>
-    <div class="nav-item" onclick="alert('Trash is empty')">
-      🗑️ Trash
-    </div>
-  </div>
-
-  <!-- Main Content -->
-  <div class="main-content">
-    <div class="content-header">
-      <h1>My Drive</h1>
-      <div class="view-options">
-        <button class="view-btn active" title="List view" onclick="setView('list')">☰</button>
-        <button class="view-btn" title="Grid view" onclick="setView('grid')">⊞</button>
-      </div>
+        <section class="files-section">
+          <div class="section-header">
+            <h3 id="currentFolderTitle">My Drive</h3>
+          </div>
+          <div id="fileList" class="file-list"></div>
+        </section>
+      </main>
     </div>
 
-    <div id="status" class="status-message"></div>
+    <script>
+      // let allFiles = [];
+      let allFolders = [];
+      let currentFolder = "My Drive";
+      const token = localStorage.getItem("token");
 
-    <!-- Stats -->
-    <div class="stats">
-      <div class="stat-card">
-        <div class="stat-label">Total Files</div>
-        <div class="stat-value" id="totalFiles">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Storage Used</div>
-        <div class="stat-value" id="storageUsed">0 MB</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Status</div>
-        <div class="stat-value" id="status-indicator">✅ Ready</div>
-      </div>
-    </div>
+      if (!token) {
+        window.location.href = "/login.html";
+      }
+      function authFetch(url, options = {}) {
+        const headers = {
+          ...(options.headers || {}),
+          Authorization: `Bearer ${token}`,
+        };
 
-    <!-- File List -->
-    <div class="file-list" id="fileList">
+        return fetch(url, {
+          ...options,
+          headers,
+        });
+      }
+      function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "/login.html";
+      }
+      let allFiles = [];
+
+      // Show status
+      function showStatus(message, type) {
+        const status = document.getElementById("status");
+        status.textContent = message;
+        status.className = `status-message ${type}`;
+
+        setTimeout(() => {
+          status.className = "status-message";
+        }, 4000);
+      }
+
+      // Handle file select
+      function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        uploadFile(file);
+      }
+
+      // Upload file
+      async function uploadFile(file) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const response = await authFetch("http://localhost:5000/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            showStatus(`✅ ${file.name} uploaded`, "success");
+            document.getElementById("uploadInput").value = "";
+            loadFiles();
+          } else {
+            showStatus("❌ Upload failed", "error");
+          }
+        } catch (error) {
+          showStatus(`❌ ${error.message}`, "error");
+        }
+      }
+
+      // Load files
+      async function loadFiles() {
+        try {
+          currentFolder = "My Drive";
+
+          const res = await authFetch("http://localhost:5000/api/files");
+          const data = await res.json();
+
+          const fileList = document.getElementById("fileList");
+          const totalFiles = document.getElementById("totalFiles");
+          const storageUsed = document.getElementById("storageUsed");
+          const currentFolderTitle =
+            document.getElementById("currentFolderTitle");
+
+          fileList.innerHTML = "";
+          currentFolderTitle.textContent = "My Drive";
+
+          if (!data.success || !data.files) {
+            allFiles = [];
+            renderFiles([]);
+            totalFiles.textContent = "0";
+            storageUsed.textContent = "0 MB";
+            return;
+          }
+
+          allFiles = data.files.filter(
+            (file) => !file.isDeleted && !file.isFolderPlaceholder,
+          );
+
+          totalFiles.textContent = data.totalFiles || allFiles.length;
+          storageUsed.textContent =
+            ((data.totalStorageUsed || 0) / (1024 * 1024)).toFixed(2) + " MB";
+
+          renderFiles(
+            allFiles.filter(
+              (file) => (file.folderName || "My Drive") === "My Drive",
+            ),
+          );
+          loadFolders();
+        } catch (error) {
+          console.error("Error loading files:", error);
+          showStatus("❌ Error loading files", "error");
+        }
+      }
+
+      async function loadFolders() {
+        try {
+          const res = await authFetch("http://localhost:5000/api/folders");
+          const data = await res.json();
+
+          if (!data.success || !data.folders) {
+            allFolders = [];
+            renderFolders([]);
+            return;
+          }
+
+          allFolders = data.folders.filter(
+            (name) => name && name !== "My Drive",
+          );
+          renderFolders(allFolders);
+        } catch (error) {
+          console.error("Error loading folders:", error);
+          renderFolders([]);
+        }
+      }
+
+      function renderFolders(folders) {
+        const folderList = document.getElementById("folderList");
+
+        if (!folders || folders.length === 0) {
+          folderList.innerHTML = `<p style="color:#6b7280;">No folders created yet</p>`;
+          return;
+        }
+
+        folderList.innerHTML = folders
+          .map(
+            (folder) => `
+        <div class="folder-card ${currentFolder === folder ? "active" : ""}" onclick="openFolder('${folder.replace(/'/g, "\\'")}')">
+          <div class="folder-icon">📁</div>
+          <div class="folder-name">${folder}</div>
+          <div class="folder-meta">Click to open</div>
+        </div>
+      `,
+          )
+          .join("");
+      }
+
+      function openFolder(folderName) {
+        currentFolder = folderName;
+        document.getElementById("currentFolderTitle").textContent = folderName;
+
+        const folderFiles = allFiles.filter(
+          (file) => (file.folderName || "My Drive") === folderName,
+        );
+        renderFiles(folderFiles);
+        renderFolders(allFolders);
+      }
+
+      async function renameFile(fileId, oldName) {
+        const newName = prompt("Enter new file name:", oldName);
+
+        if (!newName || newName.trim() === "" || newName === oldName) {
+          return;
+        }
+
+        try {
+          const res = await authFetch(
+            `http://localhost:5000/api/files/rename/${fileId}`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ newName }),
+            },
+          );
+
+          const data = await res.json();
+
+          if (data.success) {
+            showStatus("✅ File renamed", "success");
+            loadFiles();
+          } else {
+            showStatus(`❌ ${data.error}`, "error");
+          }
+        } catch (error) {
+          showStatus("❌ Rename failed", "error");
+        }
+      }
+
+      // Render files
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text || "";
+        return div.innerHTML;
+      }
+
+      function renderFiles(files) {
+        const fileList = document.getElementById("fileList");
+        const isGridView = fileList.classList.contains("grid-view");
+        fileList.innerHTML = "";
+
+        if (!files || files.length === 0) {
+          fileList.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">📁</div>
-        <div class="empty-text">No files yet</div>
-        <div class="empty-subtext">Drag files here or use the upload button</div>
+        <div class="empty-text">No files found</div>
+        <div class="empty-subtext">Upload files or open another folder</div>
       </div>
-    </div>
-  </div>
-
-  <script>
-    let allFiles = [];
-
-    // Show status
-    function showStatus(message, type) {
-      const status = document.getElementById('status');
-      status.textContent = message;
-      status.className = `status-message ${type}`;
-      
-      setTimeout(() => {
-        status.className = 'status-message';
-      }, 4000);
-    }
-
-    // Handle file select
-    function handleFileSelect(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      uploadFile(file);
-    }
-
-    // Upload file
-    async function uploadFile(file) {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      try {
-        const response = await fetch('http://localhost:5000/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          showStatus(`✅ ${file.name} uploaded`, 'success');
-          document.getElementById('uploadInput').value = '';
-          loadFiles();
-        } else {
-          showStatus('❌ Upload failed', 'error');
+    `;
+          return;
         }
-      } catch (error) {
-        showStatus(`❌ ${error.message}`, 'error');
-      }
-    }
 
-    // Load files
-    async function loadFiles() {
-      try {
-        const response = await fetch('http://localhost:5000/api/files');
-        const data = await response.json();
+        files.forEach((file) => {
+          const item = document.createElement("div");
+          item.className = "file-item";
 
-        allFiles = data.files || [];
+          const safeName = escapeHtml(file.originalName || "Untitled");
+          const safeFolder = escapeHtml(file.folderName || "My Drive");
+          const safeMime = escapeHtml(file.mimeType || "Unknown");
+          const safeCreatedAt = file.createdAt
+            ? new Date(file.createdAt).toLocaleString()
+            : "Unknown date";
 
-        const fileList = document.getElementById('fileList');
-        document.getElementById('totalFiles').textContent = data.totalFiles || 0;
+          const safeJsName = (file.originalName || "Untitled")
+            .replace(/\\/g, "\\\\")
+            .replace(/'/g, "\\'");
+          const safeJsMime = (file.mimeType || "Unknown")
+            .replace(/\\/g, "\\\\")
+            .replace(/'/g, "\\'");
 
-        const storageMB = (data.totalStorageUsed / (1024 * 1024)).toFixed(2);
-        document.getElementById('storageUsed').textContent = `${storageMB} MB`;
-
-        renderFiles(allFiles);
-      } catch (error) {
-        showStatus(`❌ Error loading files: ${error.message}`, 'error');
-      }
-    }
-
-    // Render files
-    function renderFiles(files) {
-      const fileList = document.getElementById('fileList');
-      fileList.innerHTML = '';
-
-      if (files.length === 0) {
-        fileList.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">📁</div>
-            <div class="empty-text">No files yet</div>
-            <div class="empty-subtext">Drag files here or use the upload button</div>
-          </div>
-        `;
-      } else {
-        files.forEach(file => {
-          const item = document.createElement('div');
-          item.className = 'file-item';
           item.innerHTML = `
-            <div class="file-icon">${getFileIcon(file)}</div>
-            <div class="file-info">
-              <div class="file-name" onclick="previewFile('${file}')" style="cursor: pointer;">📥 ${file}</div>
-              <div class="file-meta">Added recently • Click to preview</div>
+      <div class="file-main">
+        <div class="file-icon-wrap">
+          <div class="file-icon">${getFileIcon(file.originalName)}</div>
+        </div>
+
+        <div class="file-info">
+          <div class="file-top-row">
+            <div class="file-name" title="${safeName}">${safeName}</div>
+            <div class="file-badges">
+              ${file.isStarred ? `<span class="mini-badge starred">Starred</span>` : ""}
+              ${file.shared ? `<span class="mini-badge shared">Shared</span>` : ""}
             </div>
-            <div class="file-actions">
-              <button class="action-btn" onclick="previewFile('${file}')" title="Preview">👁️</button>
-              <button class="action-btn" onclick="downloadFile('${file}')" title="Download">⬇️</button>
-              <button class="action-btn delete-btn" onclick="deleteFile('${file}')" title="Delete">🗑️</button>
-            </div>
-          `;
+          </div>
+
+          <div class="file-folder-line">📁 ${safeFolder}</div>
+
+          <div class="file-meta">
+            <span>${(file.size / 1024).toFixed(2)} KB</span>
+            <span>•</span>
+            <span>${safeMime}</span>
+            <span>•</span>
+            <span>${safeCreatedAt}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="file-actions">
+        <button class="action-btn" onclick="toggleStar('${file._id}')" title="Star">
+          ${file.isStarred ? "⭐" : "☆"}
+        </button>
+        <button class="action-btn" onclick="previewFile('${file._id}', '${safeJsName}', '${safeJsMime}')" title="Preview">
+          👁️
+        </button>
+        <button class="action-btn" onclick="downloadFile('${file._id}', '${safeJsName}')" title="Download">
+          ⬇️
+        </button>
+        <button class="action-btn" onclick="shareFile('${file._id}')" title="Share">
+          🔗
+        </button>
+        <button class="action-btn" onclick="moveFile('${file._id}')" title="Move">
+          📂
+        </button>
+        <button class="action-btn" onclick="renameFile('${file._id}', '${safeJsName}')" title="Rename">
+          ✏️
+        </button>
+        <button class="action-btn delete-btn" onclick="deleteFile('${file._id}')" title="Delete">
+          🗑️
+        </button>
+      </div>
+    `;
+
           fileList.appendChild(item);
         });
       }
-    }
+      async function shareFile(fileId) {
+        try {
+          const res = await authFetch(
+            `http://localhost:5000/api/files/share/${fileId}`,
+            {
+              method: "PUT",
+            },
+          );
 
-    // PREVIEW FILE - WORKING FUNCTION
-function previewFile(filename) {
-  const ext = filename.split('.').pop().toLowerCase();
-  const fileUrl = `http://localhost:5000/api/view/${filename}`; // Use API for all previews
+          if (!res.ok) {
+            const text = await res.text();
+            console.error("Share error response:", text);
+            showStatus("❌ Share route not working", "error");
+            return;
+          }
 
-  // Images
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    `;
-    modal.innerHTML = `
-      <div style="position: relative; max-width: 95vw; max-height: 95vh;">
-        <img src="${fileUrl}" style="
-          max-width:95vw;
-          max-height:95vh;
-          width:auto;
-          height:auto;
-          display:block;
-          border-radius:8px;
-          box-shadow:0 5px 40px rgba(0,0,0,0.5);
-          object-fit: contain;
-        " onerror="this.parentElement.innerHTML='<div style=\'color:white\'>Image failed to load (try downloading)</div>';">
-        <button onclick="this.closest('div').parentElement.remove()" style="
-          position:absolute;
-          top:10px;
-          right:10px;
-          width: 40px;
-          height: 40px;
-          background: white;
-          border: none;
-          border-radius: 50%;
-          cursor: pointer;
-          font-size: 20px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        ">✕</button>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    showStatus(`✅ Preview: ${filename}`, 'success');
-  }
+          const data = await res.json();
 
-  // Preview PDFs
-  else if (ext === 'pdf') {
-    window.open(fileUrl, '_blank');
-    showStatus(`✅ Opening PDF: ${filename}`, 'success');
-  }
+          if (data.success) {
+            await navigator.clipboard.writeText(data.shareLink);
+            showStatus("✅ Share link copied", "success");
+          } else {
+            showStatus(`❌ ${data.error}`, "error");
+          }
+        } catch (error) {
+          showStatus("❌ Share failed", "error");
+        }
+      }
+      async function moveFile(fileId) {
+        const folderName = prompt("Move to folder name:");
+        if (!folderName || !folderName.trim()) return;
 
-  // Text files
-  else if (['txt', 'csv', 'json'].includes(ext)) {
-    window.open(fileUrl, '_blank');
-    showStatus(`✅ Opening Text: ${filename}`, 'success');
-  }
+        try {
+          const res = await authFetch(
+            `http://localhost:5000/api/files/move/${fileId}`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ folderName }),
+            },
+          );
 
-  // Other files
-  else {
-    showStatus(`📥 Download this file type to view it`, 'error');
-  }
-}
+          const data = await res.json();
 
-    // Delete file
-    async function deleteFile(filename) {
-      if (!confirm(`Delete "${filename}"?`)) return;
+          if (data.success) {
+            showStatus("✅ File moved", "success");
+            await loadFiles();
+            await loadFolders();
+          } else {
+            showStatus(`❌ ${data.error}`, "error");
+          }
+        } catch (error) {
+          showStatus("❌ Move failed", "error");
+        }
+      }
 
-      try {
-        const response = await fetch(`http://localhost:5000/api/files/${filename}`, {
-          method: 'DELETE'
+      // PREVIEW FILE - WORKING FUNCTION
+      async function previewFile(fileId, fileName, mimeType = "") {
+        console.log("preview", { fileName, mimeType });
+        const cleanName = fileName.trim().toLowerCase();
+        const ext = cleanName.includes(".") ? cleanName.split(".").pop() : "";
+
+        const isImage =
+          mimeType.startsWith("image/") ||
+          ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(ext);
+
+        const isPdf = mimeType === "application/pdf" || ext === "pdf";
+
+        const isText =
+          mimeType.startsWith("text/") || ["txt", "csv", "json"].includes(ext);
+
+        try {
+          const res = await authFetch(
+            `http://localhost:5000/api/view/${fileId}`,
+          );
+
+          if (!res.ok) {
+            showStatus("❌ Preview failed", "error");
+            return;
+          }
+
+          const blob = await res.blob();
+          const blobUrl = URL.createObjectURL(blob);
+
+          if (isImage) {
+            const modal = document.createElement("div");
+            modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      `;
+
+            modal.innerHTML = `
+        <div style="position: relative; max-width: 95vw; max-height: 95vh;">
+          <img src="${blobUrl}" style="
+            max-width:95vw;
+            max-height:95vh;
+            border-radius:8px;
+            box-shadow:0 5px 40px rgba(0,0,0,0.5);
+            object-fit: contain;
+          ">
+          <button id="closePreviewBtn" style="
+            position:absolute;
+            top:10px;
+            right:10px;
+            width:40px;
+            height:40px;
+            background:white;
+            border:none;
+            border-radius:50%;
+            cursor:pointer;
+            font-size:20px;
+          ">✕</button>
+        </div>
+      `;
+
+            document.body.appendChild(modal);
+
+            document.getElementById("closePreviewBtn").onclick = function () {
+              URL.revokeObjectURL(blobUrl);
+              modal.remove();
+            };
+
+            return;
+          }
+
+          if (isPdf) {
+            window.open(blobUrl, "_blank");
+            return;
+          }
+
+          if (isText) {
+            const text = await blob.text();
+
+            const modal = document.createElement("div");
+            modal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 700px;
+        width: 90%;
+        max-height: 80vh;
+        overflow: auto;
+        z-index: 1000;
+        box-shadow: 0 5px 40px rgba(0,0,0,0.3);
+      `;
+
+            modal.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+          <h3 style="font-size:18px;">${fileName}</h3>
+          <button id="closeTextPreview" style="
+            border:none;
+            background:none;
+            font-size:20px;
+            cursor:pointer;
+          ">✕</button>
+        </div>
+        <pre style="
+          background:#f5f5f5;
+          padding:15px;
+          border-radius:4px;
+          overflow:auto;
+          max-height:60vh;
+          font-size:12px;
+          white-space:pre-wrap;
+          word-break:break-word;
+        ">${text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
+      `;
+
+            document.body.appendChild(modal);
+
+            document.getElementById("closeTextPreview").onclick = function () {
+              URL.revokeObjectURL(blobUrl);
+              modal.remove();
+            };
+
+            return;
+          }
+
+          URL.revokeObjectURL(blobUrl);
+          showStatus("📥 Preview not supported for this file type", "error");
+        } catch (error) {
+          showStatus("❌ Preview failed", "error");
+        }
+      }
+
+      async function uploadFile(file) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const xhr = new XMLHttpRequest();
+
+          xhr.open("POST", "http://localhost:5000/api/upload");
+          xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+          xhr.upload.onprogress = function (e) {
+            if (e.lengthComputable) {
+              const percent = Math.round((e.loaded / e.total) * 100);
+              showStatus(`⬆️ Uploading ${percent}%`, "success");
+            }
+          };
+
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              const data = JSON.parse(xhr.responseText);
+              if (data.success) {
+                showStatus(`✅ ${file.name} uploaded`, "success");
+                document.getElementById("uploadInput").value = "";
+                loadFiles();
+              } else {
+                showStatus("❌ Upload failed", "error");
+              }
+            } else {
+              showStatus("❌ Upload failed", "error");
+            }
+          };
+
+          xhr.onerror = function () {
+            showStatus("❌ Upload error", "error");
+          };
+
+          xhr.send(formData);
+        } catch (error) {
+          showStatus(`❌ ${error.message}`, "error");
+        }
+      }
+
+      async function downloadFile(fileId, fileName) {
+        try {
+          const res = await authFetch(
+            `http://localhost:5000/api/files/download/${fileId}`,
+          );
+
+          if (!res.ok) {
+            alert("Download failed");
+            return;
+          }
+
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error("Download error:", error);
+        }
+      }
+
+      // Delete file
+      async function deleteFile(fileId) {
+        try {
+          const token = localStorage.getItem("token");
+
+          const res = await fetch(`http://localhost:5000/api/files/${fileId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const data = await res.json();
+
+          if (data.success) {
+            alert("File deleted successfully");
+            loadFiles();
+          } else {
+            alert(data.error || "Delete failed");
+          }
+        } catch (error) {
+          console.error("Delete error:", error);
+        }
+      }
+
+      async function loadTrash() {
+        try {
+          currentFolder = "Trash";
+          document.getElementById("currentFolderTitle").textContent = "Trash";
+
+          const res = await authFetch("http://localhost:5000/api/trash");
+          const data = await res.json();
+
+          if (!data.success || !data.files) {
+            renderTrashFiles([]);
+            return;
+          }
+
+          renderTrashFiles(data.files);
+        } catch (error) {
+          showStatus("❌ Error loading trash", "error");
+        }
+      }
+
+      async function createFolder() {
+        const folderName = prompt("Folder name:");
+        if (!folderName || !folderName.trim()) return;
+
+        try {
+          const res = await authFetch("http://localhost:5000/api/folders", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ folderName }),
+          });
+
+          const data = await res.json();
+
+          if (data.success) {
+            showStatus("✅ Folder created", "success");
+            await loadFolders();
+          } else {
+            showStatus(`❌ ${data.error}`, "error");
+          }
+        } catch (error) {
+          showStatus("❌ Folder failed", "error");
+        }
+      }
+      function setActiveTab(clickedItem) {
+        document.querySelectorAll(".nav-item").forEach((item) => {
+          item.classList.remove("active");
         });
 
-        const data = await response.json();
+        clickedItem.classList.add("active");
+      }
 
-        if (data.success) {
-          showStatus(`✅ ${filename} deleted`, 'success');
-          loadFiles();
+      function renderTrashFiles(files) {
+        const fileList = document.getElementById("fileList");
+        fileList.innerHTML = "";
+
+        if (files.length === 0) {
+          fileList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🗑️</div>
+        <div class="empty-text">Trash is empty</div>
+        <div class="empty-subtext">Deleted files will appear here</div>
+      </div>
+    `;
+          return;
         }
-      } catch (error) {
-        showStatus(`❌ Error: ${error.message}`, 'error');
+
+        files.forEach((file) => {
+          const item = document.createElement("div");
+          item.className = "file-item";
+
+          item.innerHTML = `
+      <div class="file-icon">${getFileIcon(file.originalName)}</div>
+      <div class="file-info">
+        <div class="file-name">${file.originalName}</div>
+        <div class="file-meta">
+          Deleted: ${new Date(file.deletedAt).toLocaleString()}
+        </div>
+      </div>
+      <div class="file-actions">
+        <button class="action-btn" onclick="restoreFile('${file._id}')" title="Restore">♻️</button>
+        <button class="action-btn delete-btn" onclick="permanentlyDeleteFile('${file._id}')" title="Delete Forever">❌</button>
+      </div>
+    `;
+
+          fileList.appendChild(item);
+        });
       }
-    }
 
-    // Search files
-    function searchFiles() {
-      const query = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = allFiles.filter(file => 
-        file.toLowerCase().includes(query)
-      );
-      renderFiles(filtered);
-    }
+      async function restoreFile(fileId) {
+        try {
+          const res = await authFetch(
+            `http://localhost:5000/api/files/restore/${fileId}`,
+            {
+              method: "PUT",
+            },
+          );
 
-    // Filter files
-    function filterFiles(type) {
-      renderFiles(allFiles);
-    }
+          const data = await res.json();
 
-    // Sort files
-    function sortFiles(type) {
-      if (type === 'recent') {
-        renderFiles(allFiles);
+          if (data.success) {
+            showStatus("✅ File restored", "success");
+            loadTrash();
+          } else {
+            showStatus(`❌ ${data.error}`, "error");
+          }
+        } catch (error) {
+          showStatus("❌ Restore failed", "error");
+        }
       }
-    }
 
-    // Get file icon
-    function getFileIcon(filename) {
-      const ext = filename.split('.').pop().toLowerCase();
-      const icons = {
-        'pdf': '📄', 'doc': '📝', 'docx': '📝',
-        'xls': '📊', 'xlsx': '📊',
-        'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️',
-        'mp4': '🎬', 'avi': '🎬', 'mov': '🎬',
-        'mp3': '🎵', 'wav': '🎵',
-        'zip': '📦', 'rar': '📦', '7z': '📦',
-        'txt': '📄', 'csv': '📊'
-      };
-      return icons[ext] || '📎';
-    }
+      async function permanentlyDeleteFile(fileId) {
+        try {
+          const res = await authFetch(
+            `http://localhost:5000/api/files/permanent/${fileId}`,
+            {
+              method: "DELETE",
+            },
+          );
 
-    // Set view
-    function setView(view) {
-      console.log('View set to:', view);
-    }
+          const data = await res.json();
 
-    // Load files on start
-    loadFiles();
-
-    // Drag and drop
-    document.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      document.querySelector('.main-content').style.background = '#f0f7ff';
-    });
-
-    document.addEventListener('dragleave', () => {
-      document.querySelector('.main-content').style.background = '#f8f9fa';
-    });
-
-    document.addEventListener('drop', (e) => {
-      e.preventDefault();
-      document.querySelector('.main-content').style.background = '#f8f9fa';
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        uploadFile(files[0]);
+          if (data.success) {
+            showStatus("✅ File permanently deleted", "success");
+            loadTrash();
+          } else {
+            showStatus(`❌ ${data.error}`, "error");
+          }
+        } catch (error) {
+          showStatus("❌ Permanent delete failed", "error");
+        }
       }
-    });
-  </script>
 
-</body>
+      async function toggleStar(fileId) {
+        try {
+          const res = await authFetch(
+            `http://localhost:5000/api/files/star/${fileId}`,
+            {
+              method: "PUT",
+            },
+          );
+
+          const data = await res.json();
+
+          if (data.success) {
+            showStatus(`✅ ${data.message}`, "success");
+            loadFiles();
+          } else {
+            showStatus(`❌ ${data.error}`, "error");
+          }
+        } catch (error) {
+          showStatus("❌ Star update failed", "error");
+        }
+      }
+
+      // Search files
+      function searchFiles() {
+        const searchValue = document
+          .getElementById("searchInput")
+          .value.trim()
+          .toLowerCase();
+
+        const suggestionsBox = document.getElementById("searchSuggestions");
+
+        if (!searchValue) {
+          renderFiles(getCurrentVisibleFiles());
+          suggestionsBox.style.display = "none";
+          suggestionsBox.innerHTML = "";
+          return;
+        }
+
+        const filteredFiles = getCurrentVisibleFiles().filter(
+          (file) =>
+            file.originalName &&
+            file.originalName.toLowerCase().includes(searchValue),
+        );
+
+        renderFiles(filteredFiles);
+
+        if (filteredFiles.length === 0) {
+          suggestionsBox.style.display = "none";
+          suggestionsBox.innerHTML = "";
+          return;
+        }
+
+        suggestionsBox.innerHTML = filteredFiles
+          .slice(0, 5)
+          .map(
+            (file) => `
+        <div
+          onclick="selectSuggestion('${file.originalName.replace(/'/g, "\\'")}')"
+          style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f3f4;"
+          onmouseover="this.style.background='#f8f9fa'"
+          onmouseout="this.style.background='white'"
+        >
+          ${file.originalName}
+        </div>
+      `,
+          )
+          .join("");
+
+        suggestionsBox.style.display = "block";
+      }
+
+      function selectSuggestion(fileName) {
+        document.getElementById("searchInput").value = fileName;
+        document.getElementById("searchSuggestions").style.display = "none";
+
+        const filteredFiles = allFiles.filter(
+          (file) => file.originalName && file.originalName === fileName,
+        );
+
+        renderFiles(filteredFiles);
+      }
+
+      document.addEventListener("click", function (e) {
+        const input = document.getElementById("searchInput");
+        const box = document.getElementById("searchSuggestions");
+
+        if (!input.contains(e.target) && !box.contains(e.target)) {
+          box.style.display = "none";
+        }
+      });
+
+      function filterFiles(type) {
+        document.getElementById("searchInput").value = "";
+        const suggestionsBox = document.getElementById("searchSuggestions");
+        suggestionsBox.style.display = "none";
+        suggestionsBox.innerHTML = "";
+
+        if (type === "all") {
+          currentFolder = "My Drive";
+          document.getElementById("currentFolderTitle").textContent =
+            "My Drive";
+          renderFiles(getCurrentVisibleFiles());
+          renderFolders(allFolders);
+        }
+
+        if (type === "starred") {
+          currentFolder = "Starred";
+          document.getElementById("currentFolderTitle").textContent = "Starred";
+          renderFiles(getCurrentVisibleFiles());
+          renderFolders(allFolders);
+        }
+      }
+
+      function getCurrentVisibleFiles() {
+        if (currentFolder === "Starred") {
+          return allFiles.filter((file) => file.isStarred && !file.isDeleted);
+        }
+
+        if (currentFolder === "My Drive") {
+          return allFiles.filter(
+            (file) => (file.folderName || "My Drive") === "My Drive",
+          );
+        }
+
+        return allFiles.filter(
+          (file) => (file.folderName || "My Drive") === currentFolder,
+        );
+      }
+
+      function sortFiles(type) {
+        let sortedFiles = [...getCurrentVisibleFiles()];
+
+        if (type === "recent") {
+          sortedFiles.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+          );
+        } else if (type === "name") {
+          sortedFiles.sort((a, b) =>
+            a.originalName.localeCompare(b.originalName),
+          );
+        } else if (type === "size") {
+          sortedFiles.sort((a, b) => b.size - a.size);
+        }
+
+        renderFiles(sortedFiles);
+      }
+      // Get file icon
+      function getFileIcon(filename) {
+        const ext = filename.split(".").pop().toLowerCase();
+        const icons = {
+          pdf: "📄",
+          doc: "📝",
+          docx: "📝",
+          xls: "📊",
+          xlsx: "📊",
+          jpg: "🖼️",
+          jpeg: "🖼️",
+          png: "🖼️",
+          gif: "🖼️",
+          mp4: "🎬",
+          avi: "🎬",
+          mov: "🎬",
+          mp3: "🎵",
+          wav: "🎵",
+          zip: "📦",
+          rar: "📦",
+          "7z": "📦",
+          txt: "📄",
+          csv: "📊",
+        };
+        return icons[ext] || "📎";
+      }
+
+      // Set view
+      function setView(view) {
+        const fileList = document.getElementById("fileList");
+        const buttons = document.querySelectorAll(".view-btn");
+
+        buttons.forEach((btn) => btn.classList.remove("active"));
+
+        if (view === "list") {
+          buttons[0].classList.add("active");
+          fileList.classList.remove("grid-view");
+        }
+
+        if (view === "grid") {
+          buttons[1].classList.add("active");
+          fileList.classList.add("grid-view");
+        }
+      }
+
+      // Load files on start
+      loadFiles();
+
+      // Drag and drop
+      document.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        document.querySelector(".main-content").style.background = "#f0f7ff";
+      });
+
+      document.addEventListener("dragleave", () => {
+        document.querySelector(".main-content").style.background = "#f8f9fa";
+      });
+
+      document.addEventListener("drop", (e) => {
+        e.preventDefault();
+        document.querySelector(".main-content").style.background = "#f8f9fa";
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          uploadFile(files[0]);
+        }
+      });
+    </script>
+  </body>
 </html>
