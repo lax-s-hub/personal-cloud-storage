@@ -214,7 +214,7 @@
         formData.append("file", file);
 
         try {
-          const response = await authFetch("http://localhost:5000/api/upload", {
+          const response = await authFetch("/api/upload", {
             method: "POST",
             body: formData,
           });
@@ -238,7 +238,7 @@
         try {
           currentFolder = "My Drive";
 
-          const res = await authFetch("http://localhost:5000/api/files");
+          const res = await authFetch("/api/files");
           const data = await res.json();
 
           const fileList = document.getElementById("fileList");
@@ -280,7 +280,7 @@
 
       async function loadFolders() {
         try {
-          const res = await authFetch("http://localhost:5000/api/folders");
+          const res = await authFetch("/api/folders");
           const data = await res.json();
 
           if (!data.success || !data.folders) {
@@ -339,16 +339,13 @@
         }
 
         try {
-          const res = await authFetch(
-            `http://localhost:5000/api/files/rename/${fileId}`,
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ newName }),
+          const res = await authFetch(`/api/files/rename/${fileId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
             },
-          );
+            body: JSON.stringify({ newName }),
+          });
 
           const data = await res.json();
 
@@ -461,12 +458,9 @@
       }
       async function shareFile(fileId) {
         try {
-          const res = await authFetch(
-            `http://localhost:5000/api/files/share/${fileId}`,
-            {
-              method: "PUT",
-            },
-          );
+          const res = await authFetch(`/api/files/share/${fileId}`, {
+            method: "PUT",
+          });
 
           if (!res.ok) {
             const text = await res.text();
@@ -492,16 +486,13 @@
         if (!folderName || !folderName.trim()) return;
 
         try {
-          const res = await authFetch(
-            `http://localhost:5000/api/files/move/${fileId}`,
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ folderName }),
+          const res = await authFetch(`/api/files/move/${fileId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
             },
-          );
+            body: JSON.stringify({ folderName }),
+          });
 
           const data = await res.json();
 
@@ -533,9 +524,7 @@
           mimeType.startsWith("text/") || ["txt", "csv", "json"].includes(ext);
 
         try {
-          const res = await authFetch(
-            `http://localhost:5000/api/view/${fileId}`,
-          );
+          const res = await authFetch(`/api/view/${fileId}`);
 
           if (!res.ok) {
             showStatus("❌ Preview failed", "error");
@@ -665,7 +654,7 @@
         try {
           const xhr = new XMLHttpRequest();
 
-          xhr.open("POST", "http://localhost:5000/api/upload");
+          xhr.open("POST", "/api/upload");
           xhr.setRequestHeader("Authorization", `Bearer ${token}`);
 
           xhr.upload.onprogress = function (e) {
@@ -702,9 +691,7 @@
 
       async function downloadFile(fileId, fileName) {
         try {
-          const res = await authFetch(
-            `http://localhost:5000/api/files/download/${fileId}`,
-          );
+          const res = await authFetch(`/api/files/download/${fileId}`);
 
           if (!res.ok) {
             alert("Download failed");
@@ -730,7 +717,7 @@
         try {
           const token = localStorage.getItem("token");
 
-          const res = await fetch(`http://localhost:5000/api/files/${fileId}`, {
+          const res = await fetch(`/api/files/${fileId}`, {
             method: "DELETE",
             headers: {
               Authorization: `Bearer ${token}`,
@@ -755,7 +742,7 @@
           currentFolder = "Trash";
           document.getElementById("currentFolderTitle").textContent = "Trash";
 
-          const res = await authFetch("http://localhost:5000/api/trash");
+          const res = await authFetch("/api/trash");
           const data = await res.json();
 
           if (!data.success || !data.files) {
@@ -774,7 +761,7 @@
         if (!folderName || !folderName.trim()) return;
 
         try {
-          const res = await authFetch("http://localhost:5000/api/folders", {
+          const res = await authFetch("/api/folders", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -841,12 +828,9 @@
 
       async function restoreFile(fileId) {
         try {
-          const res = await authFetch(
-            `http://localhost:5000/api/files/restore/${fileId}`,
-            {
-              method: "PUT",
-            },
-          );
+          const res = await authFetch(`/api/files/restore/${fileId}`, {
+            method: "PUT",
+          });
 
           const data = await res.json();
 
@@ -863,12 +847,9 @@
 
       async function permanentlyDeleteFile(fileId) {
         try {
-          const res = await authFetch(
-            `http://localhost:5000/api/files/permanent/${fileId}`,
-            {
-              method: "DELETE",
-            },
-          );
+          const res = await authFetch(`/api/files/permanent/${fileId}`, {
+            method: "DELETE",
+          });
 
           const data = await res.json();
 
@@ -885,12 +866,9 @@
 
       async function toggleStar(fileId) {
         try {
-          const res = await authFetch(
-            `http://localhost:5000/api/files/star/${fileId}`,
-            {
-              method: "PUT",
-            },
-          );
+          const res = await authFetch(`/api/files/star/${fileId}`, {
+            method: "PUT",
+          });
 
           const data = await res.json();
 
